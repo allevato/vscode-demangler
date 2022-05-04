@@ -35,6 +35,58 @@ export class DemanglingDecorator {
     });
   }
 
+  // Registers listeners to update decorations whenever the active editor,
+  // visible ranges, or content change, and immediately decorates the currently
+  // active editor, if any.
+  public activate(context: vscode.ExtensionContext) {
+    // Update the symbol demangling decorations whenever the user activates a
+    // new editor.
+    vscode.window.onDidChangeActiveTextEditor(
+      (editor) => {
+        if (editor) {
+          this.decorateSymbolsInRanges(editor, editor.visibleRanges);
+        }
+      },
+      null,
+      context.subscriptions
+    );
+
+    // Update the symbol demangling decorations whenever the user scrolls or
+    // otherwise changes the visible ranges in an editor (e.g., by resizing it).
+    vscode.window.onDidChangeTextEditorVisibleRanges(
+      (event) => {
+        this.decorateSymbolsInRanges(event.textEditor, event.visibleRanges);
+      },
+      null,
+      context.subscriptions
+    );
+
+    // Update the symbol mangling decorations whenever the active editor's
+    // document is edited.
+    vscode.workspace.onDidChangeTextDocument(
+      (event) => {
+        const activeEditor = vscode.window.activeTextEditor;
+        if (!activeEditor || activeEditor.document !== event.document) {
+          return;
+        }
+        // Since we regenerate the full set of decorations on each call to this
+        // function, we can't restrict our operation to just the edited ranges.
+        //
+        // TODO(allevato): Consider optimizing this, though once we add caching
+        // for demangled symbols, that might be good enough.
+        this.decorateSymbolsInRanges(activeEditor, activeEditor.visibleRanges);
+      },
+      null,
+      context.subscriptions
+    );
+
+    // If an editor is active at the time of this call, process it right away.
+    const activeEditor = vscode.window.activeTextEditor;
+    if (activeEditor) {
+      this.decorateSymbolsInRanges(activeEditor, activeEditor.visibleRanges);
+    }
+  }
+
   /**
    * Updates the editor to contain decorations that show the demangled names of
    * any mangled symbols found in the given ranges.
