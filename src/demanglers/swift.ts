@@ -23,6 +23,9 @@ import { DemangleResult, IDemangler } from "../demangler_interface";
  * a Markdown block.
  */
 export class SwiftDemangler implements IDemangler {
+  // TODO(allevato): Add support for pre-stable ABI manglings.
+  mangledSymbolPattern = /_?\$s\w+/g;
+
   demangle(mangledSymbol: string): DemangleResult | null {
     const lines = child_process
       .spawnSync(

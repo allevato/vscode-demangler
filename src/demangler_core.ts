@@ -15,12 +15,6 @@
 import * as vscode from "vscode";
 import { DemangleResult, IDemangler } from "./demangler_interface";
 
-/** A regex and demangling function pair added to the demangler core. */
-type AddedDemangler = {
-  pattern: RegExp;
-  demangler: IDemangler;
-};
-
 /**
  * A demangled symbol from a text document and the range of the document that it
  * occupied.
@@ -38,7 +32,7 @@ export class DemanglerCore {
    * The list of demanglers that try to find and demangle symbols on lines of
    * text in an editor.
    */
-  private demanglers: AddedDemangler[];
+  private demanglers: IDemangler[];
 
   constructor() {
     this.demanglers = [];
@@ -49,13 +43,12 @@ export class DemanglerCore {
    *
    * The demanglers are evaluated in the order they are added.
    *
-   * @param pattern A regular expression used to identify possible mangled
-   *     symbols in a line of text.
-   * @param demangle A function that demangles the symbol and returns a result
-   *     with the demangled name or null if it could not be demangled.
+   * @param demangler An object conforming to the `IDemangler` interface that
+   *     attempts to demangle symbols matching their associated regular
+   *     expression.
    */
-  public addDemangler(pattern: RegExp, demangler: IDemangler) {
-    this.demanglers.push({ pattern: pattern, demangler: demangler });
+  public addDemangler(demangler: IDemangler) {
+    this.demanglers.push(demangler);
   }
 
   /** Shuts down any open tasks or resources used by the demangler core. */
@@ -102,9 +95,9 @@ export class DemanglerCore {
       for (let line = startLine; line < endLine; ++line) {
         const text = document.lineAt(line).text;
 
-        for (const { pattern, demangler } of this.demanglers) {
+        for (const demangler of this.demanglers) {
           let match: RegExpExecArray | null;
-          while ((match = pattern.exec(text)) !== null) {
+          while ((match = demangler.mangledSymbolPattern.exec(text)) !== null) {
             const symbol = match[0];
             const offsetInLine = match.index;
             if (offsetInLine === null) {

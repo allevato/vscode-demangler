@@ -21,6 +21,8 @@ import { DemangleResult, IDemangler } from "../demangler_interface";
  * This demangler does not provide additional hover information.
  */
 export class CppDemangler implements IDemangler {
+  mangledSymbolPattern = /_{1,2}ZN?\d+\w+/g;
+
   demangle(mangledSymbol: string): DemangleResult | null {
     const output = child_process
       .spawnSync("/usr/bin/xcrun", ["c++filt", mangledSymbol], {

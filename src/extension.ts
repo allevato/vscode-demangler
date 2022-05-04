@@ -24,8 +24,8 @@ let demanglerCore: DemanglerCore;
 /** Creates the dmangler core and add the demanglers to it. */
 function createDemanglerCore() {
   const demanglerCore = new DemanglerCore();
-  demanglerCore.addDemangler(/(_|__)?ZN?\d+\w+/g, new CppDemangler());
-  demanglerCore.addDemangler(/_?\$s\w+/g, new SwiftDemangler());
+  demanglerCore.addDemangler(new CppDemangler());
+  demanglerCore.addDemangler(new SwiftDemangler());
   return demanglerCore;
 }
 

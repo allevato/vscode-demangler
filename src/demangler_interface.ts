@@ -41,6 +41,12 @@ export interface IDemangler {
   // server model.
 
   /**
+   * A regular expressions that matches likely mangled symbols recognized by
+   * this demangler.
+   */
+  mangledSymbolPattern: RegExp;
+
+  /**
    * Attempts to demangle the given symbol.
    *
    * @param mangledSymbol The mangled symbol.
