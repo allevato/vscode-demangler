@@ -96,11 +96,11 @@ export class DemanglingDecorator {
    * @param ranges The ranges of the document that should be scanned for mangled
    *     symbols.
    */
-  public decorateSymbolsInRanges(
+  public async decorateSymbolsInRanges(
     editor: vscode.TextEditor,
     ranges: readonly vscode.Range[]
   ) {
-    const demangleResults = this.demanglerCore.demangleSymbolsInRanges(
+    const demangleResults = await this.demanglerCore.demangleSymbolsInRanges(
       editor.document,
       ranges
     );

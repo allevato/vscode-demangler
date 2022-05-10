@@ -34,8 +34,17 @@ export class DemanglerCore {
    */
   private demanglers: IDemangler[];
 
+  /**
+   * A mapping where each key is a possible mangled symbol found by matching one
+   * of the demangler's regular expressions, and the corresponding value is
+   * either null (to indicate that the symbol could not be demangled) or the
+   * successful demangling result.
+   */
+  private demangleCache: Map<string, DemangleResult | null>;
+
   constructor() {
     this.demanglers = [];
+    this.demangleCache = new Map<string, DemangleResult | null>();
   }
 
   /**
@@ -58,28 +67,35 @@ export class DemanglerCore {
   }
 
   /**
-   * Updates the editor to contain decorations that show the demangled names of
-   * any mangled symbols found in the given ranges.
+   * Scans the document for mangled symbols in the given ranges and returns
+   * values describing their locations and demangled names.
    *
    * @param document The `vscode.TextDocument` that will be scanned for mangled
    *     symbols.
    * @param ranges The ranges of the document that should be scanned for mangled
    *     symbols.
+   * @returns A promies for an array of `DemangledDocumentSymbol` values, each
+   *     of which describes the location and demangled name of a mangled symbol
+   *     found in the document at the given ranges.
    */
-  public demangleSymbolsInRanges(
+  public async demangleSymbolsInRanges(
     document: vscode.TextDocument,
     ranges: readonly vscode.Range[]
-  ): DemangledDocumentSymbol[] {
-    // TODO(allevato): Add a cache so that we don't re-demangle the same symbol
-    // multiple times.
-
+  ): Promise<DemangledDocumentSymbol[]> {
     // TODO(allevato): Rework this algorithm and the demangler interfaces so
     // that we keep the subprocesses running and pipe input to them. Since
     // cxxfilt and swift-demangle both block on input from stdin, we can treat
     // them like servers (but make the interface generic enough for other
     // demanglers that don't work this way).
 
-    const results: DemangledDocumentSymbol[] = [];
+    // First, collect all the possible demangled symbols in the given ranges of
+    // the document. For each symbol, track the demangler that found it and its
+    // position.
+    const mangledSymbols: {
+      symbol: string;
+      demangler: IDemangler;
+      position: vscode.Position;
+    }[] = [];
 
     for (const range of ranges) {
       const startOffset = document.offsetAt(range.start);
@@ -104,25 +120,64 @@ export class DemanglerCore {
               continue;
             }
 
-            const demangleResult = demangler.demangle(symbol);
-            if (demangleResult === null) {
-              continue;
-            }
-
-            results.push({
-              range: new vscode.Range(
-                line,
-                offsetInLine,
-                line,
-                offsetInLine + symbol.length
-              ),
-              result: demangleResult,
+            mangledSymbols.push({
+              symbol: symbol,
+              demangler: demangler,
+              position: new vscode.Position(line, offsetInLine),
             });
           }
         }
       }
     }
 
+    // Now, demangle each symbol that was found (or pull the cached result if it
+    // was demangled previously).
+    const results: DemangledDocumentSymbol[] = [];
+
+    for (const { symbol, demangler, position } of mangledSymbols) {
+      const demangleResult = await this.lookupSymbolInCacheOrDemangle(
+        symbol,
+        demangler
+      );
+      if (demangleResult === null) {
+        continue;
+      }
+
+      results.push({
+        range: new vscode.Range(position, position.translate(0, symbol.length)),
+        result: demangleResult,
+      });
+    }
+
     return results;
+  }
+
+  /**
+   * Looks up the given symbol in the demangling cache and returns the result if
+   * found; otherwise, performs the demangling operation, updates the cache, and
+   * returns the result.
+   *
+   * @param symbol The symbol to demangle.
+   * @param demangler The demangler to use to demangle the symbol.
+   * @returns A promise for the demangled result, or a promise for null if the
+   *     symbol could not be demangled.
+   */
+  private lookupSymbolInCacheOrDemangle(
+    symbol: string,
+    demangler: IDemangler
+  ): Promise<DemangleResult | null> {
+    return new Promise<DemangleResult | null>((resolve, reject) => {
+      const cachedResult = this.demangleCache.get(symbol);
+      if (cachedResult !== undefined) {
+        resolve(cachedResult);
+        return;
+      }
+
+      // TODO(allevato): Look at making this some sort of LRU cache to avoid
+      // unbounded memory usage.
+      const demangledResult = demangler.demangle(symbol);
+      this.demangleCache.set(symbol, demangledResult);
+      resolve(demangledResult);
+    });
   }
 }
