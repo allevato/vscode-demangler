@@ -23,8 +23,12 @@ import { DemangleResult, IDemangler } from "../demangler_interface";
  * a Markdown block.
  */
 export class SwiftDemangler implements IDemangler {
-  // TODO(allevato): Add support for pre-stable ABI manglings.
-  mangledSymbolPattern = /_?\$s\w+/g;
+  /**
+   * Swift 5+ ABI stable mangled symbols start with "_$s" (underscore optional).
+   * Before that, a couple other mangling prefixes were used: "_$S" and "_T". We
+   * recognize these as well since swift-demangle can handle them.
+   */
+  mangledSymbolPattern = /(_?\$[sS]|_T)\w+/g;
 
   demangle(mangledSymbol: string): DemangleResult | null {
     const lines = child_process
