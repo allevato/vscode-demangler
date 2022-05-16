@@ -12,9 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import * as child_process from "child_process";
 import * as vscode from "vscode";
 import { DemangleResult, IDemangler } from "../demangler_interface";
+import { spawnDemanglerSync } from "../spawn";
 
 /**
  * Invokes `swift-demangle` to demangle Swift symbols.
@@ -31,12 +31,10 @@ export class SwiftDemangler implements IDemangler {
   mangledSymbolPattern = /(_?\$[sS]|_T)\w+/g;
 
   demangle(mangledSymbol: string): DemangleResult | null {
-    const lines = child_process
-      .spawnSync(
-        "/usr/bin/xcrun",
-        ["swift-demangle", "--expand", "--compact", mangledSymbol],
-        { encoding: "utf8" }
-      )
+    const lines = spawnDemanglerSync(
+      ["swift-demangle", "--expand", "--compact", mangledSymbol],
+      { encoding: "utf8" }
+    )
       .stdout.trim()
       .split("\n");
 
