@@ -27,11 +27,13 @@ export class DemanglingDecorator {
     this.decorationType = vscode.window.createTextEditorDecorationType({
       after: {
         // TODO(allevato): Make the appearance a bit more customizable?
-        color: new vscode.ThemeColor("editorCodeLens.foreground"),
+        backgroundColor: new vscode.ThemeColor("input.background"),
+        color: new vscode.ThemeColor("input.foreground"),
         fontStyle: "normal",
         fontWeight: "normal",
         margin: "0 6pt",
       },
+      textDecoration: "underline dashed",
     });
   }
 
@@ -108,7 +110,7 @@ export class DemanglingDecorator {
     editor.setDecorations(
       this.decorationType,
       demangleResults.map(function (result) {
-        return {
+        return <vscode.DecorationOptions>{
           hoverMessage: result.result.detailedText,
           range: result.range,
           renderOptions: {
