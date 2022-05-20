@@ -10,8 +10,37 @@
     "Programming Languages"
   ],
   "activationEvents": [
-    "onStartupFinished"
+    "onStartupFinished",
+    "onCommand:demangler.copyDemangledSymbol"
   ],
+  "contributes": {
+    "commands": [
+      {
+        "command": "demangler.copyDemangledSymbol",
+        "category": "Demangler",
+        "title": "Copy Demangled Symbol"
+      }
+    ],
+    "keybindings":[
+      {
+        "command": "demangler.copyDemangledSymbol",
+        "key": "Ctrl+K Ctrl+M",
+        "mac": "Cmd+K Cmd+M"
+      }
+    ],
+    "menus": {
+      "editor/context/copy": [
+        {
+          "command": "demangler.copyDemangledSymbol"
+        }
+      ],
+      "menuBar/edit/copy": [
+        {
+          "command": "demangler.copyDemangledSymbol"
+        }
+      ]
+    }
+  },
   "main": "./dist/extension.js",
   "scripts": {
     "vscode:prepublish": "npm run package",

@@ -13,6 +13,7 @@
 // limitations under the License.
 
 import * as vscode from "vscode";
+import { DemanglingCopier } from "./demangling_copier";
 import { DemanglerCore } from "./demangler_core";
 import { DemanglingDecorator } from "./demangling_decorator";
 import { CppDemangler } from "./demanglers/cpp";
@@ -29,8 +30,11 @@ function createDemanglerCore() {
   return demanglerCore;
 }
 
-export function activate(context: vscode.ExtensionContext) {
+export async function activate(context: vscode.ExtensionContext) {
   demanglerCore = createDemanglerCore();
+
+  const demanglingCopier = new DemanglingCopier(demanglerCore);
+  await demanglingCopier.activate(context);
 
   const demanglingDecorator = new DemanglingDecorator(demanglerCore);
   demanglingDecorator.activate(context);
