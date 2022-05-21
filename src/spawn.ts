@@ -13,6 +13,25 @@
 // limitations under the License.
 
 import * as child_process from "child_process";
+import * as which from "which";
+
+/**
+ * Returns a value indicating whether the specified command can be spawned as an
+ * external process.
+ *
+ * If the command is not an absolute path, then it will be checked using `xcrun`
+ * on macOS and using `which` on all other platforms.
+ *
+ * @param command The command to check.
+ * @returns True if the command can be spawned, otherwise false.
+ */
+export function canSpawnSync(command: string): boolean {
+  if (process.platform === "darwin") {
+    const xcrun = child_process.spawnSync("xcrun", ["-f", command]);
+    return xcrun.status === 0 && xcrun.signal === null;
+  }
+  return which.sync(command, { nothrow: true }) !== null;
+}
 
 /**
  * A wrapper around `child_process.spawnSync` that invokes the command via

@@ -82,11 +82,12 @@ export class DemanglingDecorator {
       context.subscriptions
     );
 
-    // If an editor is active at the time of this call, process it right away.
-    const activeEditor = vscode.window.activeTextEditor;
-    if (activeEditor) {
-      this.decorateSymbolsInRanges(activeEditor, activeEditor.visibleRanges);
-    }
+    this.demanglerCore.onDidInvalidate(() => {
+      this.decorateVisibleEditors();
+    });
+
+    // Process all the currently visible editors right away.
+    this.decorateVisibleEditors();
   }
 
   /**
@@ -119,5 +120,12 @@ export class DemanglingDecorator {
         };
       })
     );
+  }
+
+  /** Iterates over the visible editors and decorates their visible ranges. */
+  private decorateVisibleEditors() {
+    for (const editor of vscode.window.visibleTextEditors) {
+      this.decorateSymbolsInRanges(editor, editor.visibleRanges);
+    }
   }
 }

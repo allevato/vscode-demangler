@@ -12,8 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import * as vscode from "vscode";
+import { DemanglerPathSettings } from "../demangler_path_settings";
 import { DemangleResult, IDemangler } from "../demangler_interface";
-import { spawnDemanglerSync } from "../spawn";
+import { canSpawnSync, spawnDemanglerSync } from "../spawn";
 
 /**
  * Invokes `c++filt` to demangle C++ symbols.
@@ -23,10 +25,28 @@ import { spawnDemanglerSync } from "../spawn";
 export class CppDemangler implements IDemangler {
   mangledSymbolPattern = /_{1,2}ZN?\d+\w+/g;
 
+  /** The view of the path settings for this demangler. */
+  private pathSettings: DemanglerPathSettings;
+
+  constructor() {
+    this.pathSettings = new DemanglerPathSettings("C++", "c++");
+  }
+
+  activate() {
+    this.pathSettings.updateAvailability();
+  }
+
+  isAvailable(): boolean {
+    return this.pathSettings.isToolValid();
+  }
+
   demangle(mangledSymbol: string): DemangleResult | null {
-    const output = spawnDemanglerSync(["c++filt", mangledSymbol], {
-      encoding: "utf8",
-    }).stdout.trim();
+    const output = spawnDemanglerSync(
+      [this.pathSettings.toolPath(), mangledSymbol],
+      {
+        encoding: "utf8",
+      }
+    ).stdout.trim();
 
     // If the same string was printed back, cxxfilt wasn't able to demangle it.
     if (output === mangledSymbol) {
@@ -34,5 +54,9 @@ export class CppDemangler implements IDemangler {
     }
 
     return { demangled: output };
+  }
+
+  onDidChangeConfiguration(event: vscode.ConfigurationChangeEvent): boolean {
+    return this.pathSettings.updateAvailability(event);
   }
 }

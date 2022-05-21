@@ -13,8 +13,9 @@
 // limitations under the License.
 
 import * as vscode from "vscode";
+import { DemanglerPathSettings } from "../demangler_path_settings";
 import { DemangleResult, IDemangler } from "../demangler_interface";
-import { spawnDemanglerSync } from "../spawn";
+import { canSpawnSync, spawnDemanglerSync } from "../spawn";
 
 /**
  * Invokes `swift-demangle` to demangle Swift symbols.
@@ -30,9 +31,24 @@ export class SwiftDemangler implements IDemangler {
    */
   mangledSymbolPattern = /(_?\$[sS]|_T)\w+/g;
 
+  /** The view of the path settings for this demangler. */
+  private pathSettings: DemanglerPathSettings;
+
+  constructor() {
+    this.pathSettings = new DemanglerPathSettings("Swift", "swift");
+  }
+
+  activate() {
+    this.pathSettings.updateAvailability();
+  }
+
+  isAvailable(): boolean {
+    return this.pathSettings.isToolValid();
+  }
+
   demangle(mangledSymbol: string): DemangleResult | null {
     const lines = spawnDemanglerSync(
-      ["swift-demangle", "--expand", "--compact", mangledSymbol],
+      [this.pathSettings.toolPath(), "--expand", "--compact", mangledSymbol],
       { encoding: "utf8" }
     )
       .stdout.trim()
@@ -56,5 +72,9 @@ export class SwiftDemangler implements IDemangler {
       demangled: demangled,
       detailedText: detailedMarkdown,
     };
+  }
+
+  onDidChangeConfiguration(event: vscode.ConfigurationChangeEvent): boolean {
+    return this.pathSettings.updateAvailability(event);
   }
 }

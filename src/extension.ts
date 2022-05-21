@@ -24,14 +24,16 @@ let demanglerCore: DemanglerCore;
 
 /** Creates the dmangler core and add the demanglers to it. */
 function createDemanglerCore() {
-  const demanglerCore = new DemanglerCore();
-  demanglerCore.addDemangler(new CppDemangler());
-  demanglerCore.addDemangler(new SwiftDemangler());
+  const demanglerCore = new DemanglerCore([
+    new CppDemangler(),
+    new SwiftDemangler(),
+  ]);
   return demanglerCore;
 }
 
 export async function activate(context: vscode.ExtensionContext) {
   demanglerCore = createDemanglerCore();
+  demanglerCore.activate(context);
 
   const demanglingCopier = new DemanglingCopier(demanglerCore);
   await demanglingCopier.activate(context);

@@ -37,14 +37,20 @@ export type DemangleResult = {
  * language or mangling scheme.
  */
 export interface IDemangler {
-  // TODO(allevato): Add lifecycle methods (activate, deactivate) to switch to a
-  // server model.
-
   /**
    * A regular expressions that matches likely mangled symbols recognized by
    * this demangler.
    */
   mangledSymbolPattern: RegExp;
+
+  /**
+   * Returns a value indicating whether the demangler is currently available
+   * (that is, its path setting points to a valid executable).
+   */
+  isAvailable(): boolean;
+
+  /** Called when the extension is activated. */
+  activate(): void;
 
   /**
    * Attempts to demangle the given symbol.
@@ -54,4 +60,14 @@ export interface IDemangler {
    *     not be demangled.
    */
   demangle(mangledSymbol: string): DemangleResult | null;
+
+  /**
+   * Called when the configuration has changed.
+   *
+   * Demanglers can use this to scan for the executable at the new path when it
+   * has changed and update their internal state.
+   *
+   * @param event Describes the configuration change.
+   */
+  onDidChangeConfiguration(event: vscode.ConfigurationChangeEvent): boolean;
 }

@@ -32,7 +32,7 @@ export class DemanglerCore {
    * The list of demanglers that try to find and demangle symbols on lines of
    * text in an editor.
    */
-  private demanglers: IDemangler[];
+  private demanglers: readonly IDemangler[];
 
   /**
    * A mapping where each key is a possible mangled symbol found by matching one
@@ -42,22 +42,38 @@ export class DemanglerCore {
    */
   private demangleCache: Map<string, DemangleResult | null>;
 
-  constructor() {
-    this.demanglers = [];
+  /** Emitter for the `onDidInvalidate` event. */
+  private onDidInvalidateEmitter = new vscode.EventEmitter<void>();
+
+  /**
+   * Fires when the demangling core is invalidated (for example, when the path
+   * to a demangler is changed in Settings).
+   */
+  onDidInvalidate: vscode.Event<void> = this.onDidInvalidateEmitter.event;
+
+  /**
+   * Creates a new demangling core with the given list of demanglers.
+   *
+   * The demanglers are evaluated in the order they are given in the array.
+   *
+   * @param demanglers An array of objects conforming to the `IDemangler`
+   *     interface that attempts to demangle symbols matching their associated
+   *     regular expression.
+   */
+  constructor(demanglers: readonly IDemangler[]) {
+    this.demanglers = demanglers;
     this.demangleCache = new Map<string, DemangleResult | null>();
   }
 
-  /**
-   * Adds a new demangler.
-   *
-   * The demanglers are evaluated in the order they are added.
-   *
-   * @param demangler An object conforming to the `IDemangler` interface that
-   *     attempts to demangle symbols matching their associated regular
-   *     expression.
-   */
-  public addDemangler(demangler: IDemangler) {
-    this.demanglers.push(demangler);
+  /** Called when the extension is activated. */
+  public activate(context: vscode.ExtensionContext) {
+    vscode.workspace.onDidChangeConfiguration((event) => {
+      this.onDidChangeConfiguration(event);
+    }, context);
+
+    for (const demangler of this.demanglers) {
+      demangler.activate();
+    }
   }
 
   /** Shuts down any open tasks or resources used by the demangler core. */
@@ -112,6 +128,10 @@ export class DemanglerCore {
         const text = document.lineAt(line).text;
 
         for (const demangler of this.demanglers) {
+          if (!demangler.isAvailable()) {
+            continue;
+          }
+
           let match: RegExpExecArray | null;
           while ((match = demangler.mangledSymbolPattern.exec(text)) !== null) {
             const symbol = match[0];
@@ -168,7 +188,7 @@ export class DemanglerCore {
   ): Promise<DemangleResult | null> {
     return new Promise<DemangleResult | null>((resolve, reject) => {
       const cachedResult = this.demangleCache.get(symbol);
-      if (cachedResult !== undefined) {
+      if (cachedResult) {
         resolve(cachedResult);
         return;
       }
@@ -179,5 +199,28 @@ export class DemanglerCore {
       this.demangleCache.set(symbol, demangledResult);
       resolve(demangledResult);
     });
+  }
+
+  /**
+   * Called when the configuration settings have changed.
+   *
+   * Each demangler is asked to handle the event (to determine if the tool path
+   * is available and spawnable, for example), and if any of them have changed
+   * state, the demangler cache is flushed.
+   *
+   * @param event An event describing the change.
+   */
+  private onDidChangeConfiguration(event: vscode.ConfigurationChangeEvent) {
+    let didAnyInvalidate = false;
+    for (const demangler of this.demanglers) {
+      if (demangler.onDidChangeConfiguration(event)) {
+        didAnyInvalidate = true;
+      }
+    }
+
+    if (didAnyInvalidate) {
+      this.demangleCache.clear();
+      this.onDidInvalidateEmitter.fire();
+    }
   }
 }
