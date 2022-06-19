@@ -4,6 +4,7 @@
   "description": "Demangles symbols from common programming languages and shows them as inline hints in the editor.",
   "icon": "images/icon.png",
   "publisher": "tonyallevato",
+  "author": "Tony Allevato",
   "version": "0.0.1",
   "engines": {
     "vscode": "^1.66.0"
@@ -14,6 +15,15 @@
   },
   "categories": [
     "Programming Languages"
+  ],
+  "keywords": [
+    "demangle",
+    "demangler",
+    "demangling",
+    "symbol",
+    "c++",
+    "swift",
+    "itanium"
   ],
   "activationEvents": [
     "onStartupFinished",
