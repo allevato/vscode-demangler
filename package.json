@@ -6,6 +6,10 @@
   "engines": {
     "vscode": "^1.66.0"
   },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/allevato/vscode-demangler.git"
+  },
   "categories": [
     "Programming Languages"
   ],
