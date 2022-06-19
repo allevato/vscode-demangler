@@ -23,6 +23,9 @@ export class DemanglingDecorator {
   /** The decoration type used to represent demangled symbols in the editor. */
   private decorationType: vscode.TextEditorDecorationType;
 
+  /** Used to throttle decorations during scrolling. */
+  private changeVisibleRangesTimer: NodeJS.Timeout | null = null;
+
   constructor(private demanglerCore: DemanglerCore) {
     this.decorationType = vscode.window.createTextEditorDecorationType({
       after: {
@@ -57,7 +60,15 @@ export class DemanglingDecorator {
     // otherwise changes the visible ranges in an editor (e.g., by resizing it).
     vscode.window.onDidChangeTextEditorVisibleRanges(
       (event) => {
-        this.decorateSymbolsInRanges(event.textEditor, event.visibleRanges);
+        // Throttling this to require 100ms between updates provides better
+        // feedback and less demangler thrashing during rapid scrolling events.
+        if (this.changeVisibleRangesTimer) {
+          clearTimeout(this.changeVisibleRangesTimer);
+        }
+        this.changeVisibleRangesTimer = setTimeout(() => {
+          this.changeVisibleRangesTimer = null;
+          this.decorateSymbolsInRanges(event.textEditor, event.visibleRanges);
+        }, 100);
       },
       null,
       context.subscriptions
