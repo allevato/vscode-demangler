@@ -28,8 +28,11 @@ export class SwiftDemangler implements IDemangler {
    * Swift 5+ ABI stable mangled symbols start with "_$s" (underscore optional).
    * Before that, a couple other mangling prefixes were used: "_$S" and "_T". We
    * recognize these as well since swift-demangle can handle them.
+   *
+   * We also look for symbols starting with "%T", since they appear in LLVM IR
+   * followed by the mangled symbol name (without the preceding "_$s").
    */
-  mangledSymbolPattern = /(_?\$[sS]|_T)\w+/g;
+  mangledSymbolPattern = /(%T|(_?\$[sS]|_T))\w+/g;
 
   /** The view of the path settings for this demangler. */
   private pathSettings: DemanglerPathSettings;
@@ -47,6 +50,9 @@ export class SwiftDemangler implements IDemangler {
   }
 
   demangle(mangledSymbol: string): DemangleResult | null {
+    if (mangledSymbol.startsWith("%T")) {
+      mangledSymbol = `_$s${mangledSymbol.substring(2)}`;
+    }
     const lines = spawnDemanglerSync(
       [this.pathSettings.toolPath(), "--expand", "--compact", mangledSymbol],
       { encoding: "utf8" }
