@@ -56,3 +56,18 @@ editor:
 *   `demangler.${LANGUAGE_NAME}.warnIfToolPathIsInvalid` (boolean): If true,
     the extension will warn on startup if the demangler for that language is
     not available or not executable.
+
+## Adding a New Demangler
+
+If you want to add a new demangler, follow the steps below. The C++ and Swift
+demangler implementations can serve as a guide.
+
+1.  Clone this repository and open the extension's workspace in Visual Studio
+    Code.
+2.  Add settings for the demangler's tool path and to warn if it isn't valid
+    on startup in the `contributes.configuration` section of
+    [`package.json`](package.json).
+3.  Create a new file in the `src/demanglers` directory that contains an
+    implementation of the `IDemangler` interface for your demangler.
+4.  In `src/demanglers/index.ts`, import your demangler, instantiate it, and
+    add it to the array returned by `createAllDemanglers`.

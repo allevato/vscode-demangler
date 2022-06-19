@@ -16,18 +16,14 @@ import * as vscode from "vscode";
 import { DemanglingCopier } from "./demangling_copier";
 import { DemanglerCore } from "./demangler_core";
 import { DemanglingDecorator } from "./demangling_decorator";
-import { CppDemangler } from "./demanglers/cpp";
-import { SwiftDemangler } from "./demanglers/swift";
+import { createAllDemanglers } from "./demanglers";
 
 /** The object that manages the demangling operations. */
 let demanglerCore: DemanglerCore;
 
 /** Creates the dmangler core and add the demanglers to it. */
 function createDemanglerCore() {
-  const demanglerCore = new DemanglerCore([
-    new CppDemangler(),
-    new SwiftDemangler(),
-  ]);
+  const demanglerCore = new DemanglerCore(createAllDemanglers());
   return demanglerCore;
 }
 
