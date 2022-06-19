@@ -16,8 +16,8 @@ import * as vscode from "vscode";
 import { DemanglerCore, DemangledDocumentSymbol } from "./demangler_core";
 
 /**
- * Finds mangled symbols in a text editor and decorates them with their
- * demangled names.
+ * Copies the demangled form of the mangled sybol at the current cursor
+ * position.
  */
 export class DemanglingCopier {
   /**
@@ -27,9 +27,8 @@ export class DemanglingCopier {
 
   constructor(private demanglerCore: DemanglerCore) {}
 
-  // Registers listeners to update decorations whenever the active editor,
-  // visible ranges, or content change, and immediately decorates the currently
-  // active editor, if any.
+  // Registers listeners for the "Copy As > Demangled Symbol" command and to
+  // detect when the active selection changes.
   public async activate(context: vscode.ExtensionContext) {
     vscode.commands.registerTextEditorCommand(
       "demangler.copyDemangledSymbol",
@@ -38,8 +37,8 @@ export class DemanglingCopier {
       }
     );
 
-    // Update the symbol demangling decorations whenever the user activates a
-    // new editor.
+    // Track the mangled symbol under the cursor whenever the active editor
+    // changes.
     vscode.window.onDidChangeActiveTextEditor(
       async (editor) => {
         if (editor) {
@@ -50,8 +49,8 @@ export class DemanglingCopier {
       context.subscriptions
     );
 
-    // Update the symbol demangling decorations whenever the user scrolls or
-    // otherwise changes the visible ranges in an editor (e.g., by resizing it).
+    // Track the mangled symbol under the cursor whenever the current selection
+    // changes.
     vscode.window.onDidChangeTextEditorSelection(
       async (event) => {
         await this.updateLine(event.textEditor.document, event.selections);
