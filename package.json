@@ -2,6 +2,8 @@
   "name": "vscode-demangler",
   "displayName": "Symbol Demangler",
   "description": "Demangles symbols from common programming languages and shows them as inline hints in the editor.",
+  "icon": "images/icon.png",
+  "publisher": "tonyallevato",
   "version": "0.0.1",
   "engines": {
     "vscode": "^1.66.0"
