@@ -23,7 +23,7 @@ import { canSpawnSync, spawnDemanglerSync } from "../spawn";
  * This demangler does not provide additional hover information.
  */
 export class CppDemangler implements IDemangler {
-  mangledSymbolPattern = /_{1,2}ZN?\d+\w+/g;
+  mangledSymbolPattern = /_{1,2}Z[IKNTV]*(St)?\d*[$\w]+/g;
 
   /** The view of the path settings for this demangler. */
   private pathSettings: DemanglerPathSettings;
