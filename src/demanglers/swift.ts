@@ -29,10 +29,13 @@ export class SwiftDemangler implements IDemangler {
    * Before that, a couple other mangling prefixes were used: "_$S" and "_T". We
    * recognize these as well since swift-demangle can handle them.
    *
-   * We also look for symbols starting with "%T", since they appear in LLVM IR
-   * followed by the mangled symbol name (without the preceding "_$s").
+   * We also look for symbols starting with "%T" since they appear in LLVM IR
+   * followed by the mangled symbol name, symbols starting with `s:`, which is
+   * how USRs in indexstore and SourceKit are generated, and symbols starting
+   * with `@__swiftmacro_`, which represent macro expansions. (All of these
+   * forms exclude the symbol's usual "_$s" prefix.)
    */
-  mangledSymbolPattern = /(%T|(_?\$[sS]|_T))\w+/g;
+  mangledSymbolPattern = /(%T|(_?\$[sS]|_T|s:|@__swiftmacro_))[_A-Za-z0-9$]+/g;
 
   /** The view of the path settings for this demangler. */
   private pathSettings: DemanglerPathSettings;
@@ -50,7 +53,12 @@ export class SwiftDemangler implements IDemangler {
   }
 
   demangle(mangledSymbol: string): DemangleResult | null {
-    if (mangledSymbol.startsWith("%T")) {
+    if (mangledSymbol.startsWith("@__swiftmacro_")) {
+      mangledSymbol = `_$s${mangledSymbol.substring(14)}`;
+    } else if (
+      mangledSymbol.startsWith("%T") ||
+      mangledSymbol.startsWith("s:")
+    ) {
       mangledSymbol = `_$s${mangledSymbol.substring(2)}`;
     }
     const lines = spawnDemanglerSync(
