@@ -5,7 +5,7 @@
   "icon": "images/icon.png",
   "publisher": "tonyallevato",
   "author": "Tony Allevato",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "engines": {
     "vscode": "^1.66.0"
   },
